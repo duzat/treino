@@ -3,196 +3,215 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Calistenia Tracker — Google Auth + Sheets + Admin</title>
+  <title>Hub-login</title>
   <style>
-    body{margin:0;font-family:Poppins,system-ui;background:linear-gradient(135deg,#0a0f22,#0a0f18);color:#fff;display:flex;flex-direction:column;min-height:100vh}
-    header{padding:10px 20px;background:rgba(255,255,255,.05);backdrop-filter:blur(10px);display:flex;justify-content:space-between;align-items:center}
-    main{flex:1;display:flex;justify-content:center;align-items:center;flex-direction:column;padding:20px}
-    .card{background:rgba(255,255,255,.08);border-radius:16px;padding:30px;max-width:700px;width:90%;box-shadow:0 10px 30px rgba(0,0,0,.4);text-align:center}
-    .btn{padding:10px 16px;border:none;border-radius:10px;cursor:pointer;font-weight:600;font-size:15px}
-    .btn-primary{background:linear-gradient(135deg,#2a4cff,#00ffc3);color:#fff}
-    .btn-danger{background:linear-gradient(135deg,#7a2c2c,#ff5252);color:#fff}
-    .btn-admin{background:linear-gradient(135deg,#ffb700,#ff9100);color:#000;font-weight:700}
-    table{width:100%;border-collapse:collapse;margin-top:20px}
-    th,td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.1);text-align:left}
-    th{background:rgba(255,255,255,.1)}
+    :root{--bg1:#0a0f22;--bg2:#0a0f18;--glass:rgba(255,255,255,.08);--muted:#a8b3d6;--text:#eef2ff;--acc1:#7c9cff;--acc2:#65f7c1;--ok:#7ef19a;--danger:#ff6b6b;--radius:16px;--shadow:0 10px 30px rgba(0,0,0,.35)}
+    body{margin:0;font-family:Poppins,system-ui;background:linear-gradient(135deg,var(--bg1),var(--bg2));color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+    header{padding:12px 20px;background:rgba(255,255,255,.05);backdrop-filter:blur(10px);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #ffffff14}
+    .btn{border:0;padding:10px 14px;border-radius:12px;background:linear-gradient(135deg,#232f63,#27406f);color:#fff;cursor:pointer;font-weight:600}
+    .btn.primary{background:linear-gradient(135deg,#2a4cff,#00ffc3)}
+    .btn.danger{background:linear-gradient(135deg,#7a2c2c,#ff5252)}
+    .btn.warn{background:linear-gradient(135deg,#ffb700,#ff9100);color:#1a1500}
+    .card{background:rgba(255,255,255,.08);border-radius:var(--radius);padding:24px;max-width:420px;margin:auto;box-shadow:var(--shadow)}
     .hidden{display:none}
+    input,select{width:100%;background:#0b1129;border:1px solid #ffffff1f;color:#fff;border-radius:10px;padding:10px;margin-top:6px}
+    table{width:100%;border-collapse:collapse;margin-top:10px}
+    th,td{padding:10px;border-bottom:1px solid rgba(255,255,255,.1)}
+    th{background:rgba(255,255,255,.1)}
+    main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
   </style>
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
-  <header>
-    <h2>Calistenia Tracker</h2>
-    <div>
-      <button id="admin-btn" class="btn btn-admin hidden">Admin</button>
-      <button id="logout" class="btn btn-danger hidden">Sair</button>
-    </div>
-  </header>
-  <main>
-    <div id="login-card" class="card">
-      <h3>Login com Google</h3>
-      <p>Faça login para registrar seus check-ins diários sincronizados no Google Sheets.</p>
-      <div id="g_id_onload" data-client_id="REPLACE_GOOGLE_CLIENT_ID" data-callback="onGoogleSignIn" data-auto_prompt="false"></div>
-      <div class="g_id_signin" data-type="standard" data-shape="rectangular" data-theme="outline" data-text="signin_with" data-size="large"></div>
-    </div>
+<header>
+  <h2>🏋️ Calistenia Tracker</h2>
+  <div>
+    <button id="btn-admin" class="btn warn hidden">Admin</button>
+    <button id="btn-logout" class="btn danger hidden">Sair</button>
+  </div>
+</header>
 
-    <div id="app-card" class="card hidden">
-      <h3 id="user-info">Bem-vindo!</h3>
-      <h4 id="day-label"></h4>
-      <p id="check-status">Carregando status...</p>
-      <button id="checkin-btn" class="btn btn-primary">Fazer Check-in</button>
-      <table id="history-table">
-        <thead><tr><th>Data</th><th>Status</th></tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
+<main>
+  <!-- LOGIN -->
+  <section id="login" class="card">
+    <h3>Entrar</h3>
+    <input id="login-user" placeholder="Usuário" />
+    <input id="login-pass" type="password" placeholder="Senha" />
+    <button id="btn-login" class="btn primary" style="margin-top:10px">Entrar</button>
+    <p id="login-msg"></p>
+  </section>
 
-    <div id="admin-panel" class="card hidden">
-      <h3>Painel Administrativo</h3>
-      <p>Lista de todos os usuários e seus check-ins.</p>
-      <table id="admin-table">
-        <thead><tr><th>Email</th><th>Nome</th><th>Data</th></tr></thead>
-        <tbody></tbody>
-      </table>
-      <button id="close-admin" class="btn btn-danger">Fechar</button>
-    </div>
-  </main>
+  <!-- APP -->
+  <section id="app" class="hidden card">
+    <h3 id="today"></h3>
+    <p id="check-status">Carregando…</p>
+    <button id="btn-checkin" class="btn primary">Fazer Check-in</button>
+    <table id="history-table">
+      <thead><tr><th>Data</th><th>Status</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
 
-  <script>
-    const CLIENT_ID = 'REPLACE_GOOGLE_CLIENT_ID';
-    const SCRIPT_URL = 'REPLACE_APPS_SCRIPT_WEBAPP_URL';
-    const ADMIN_EMAIL = 'SEU_EMAIL_ADMIN@EXEMPLO.COM'; // e-mail do administrador Google
+  <!-- ADMIN -->
+  <section id="admin" class="hidden card">
+    <h3>Painel Admin</h3>
+    <table id="admin-table">
+      <thead><tr><th>Usuário</th><th>Data</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <hr>
+    <h4>Gerenciar usuários</h4>
+    <input id="u-user" placeholder="Usuário" />
+    <input id="u-pass" placeholder="Senha" />
+    <select id="u-admin"><option value="false">Usuário</option><option value="true">Administrador</option></select>
+    <button id="u-save" class="btn primary" style="margin-top:8px">Salvar</button>
+    <button id="u-del" class="btn danger" style="margin-top:4px">Excluir</button>
+    <p id="u-msg"></p>
+    <button id="admin-close" class="btn" style="margin-top:8px">Fechar</button>
+  </section>
+</main>
 
-    let USER = null, ID_TOKEN = null;
+<script>
+const SCRIPT_URL = 'COLE_AQUI_SUA_URL_DO_APPS_SCRIPT'; // ex: https://script.google.com/macros/s/AKfycbyEXEMPLO/exec
+let SESSION = null;
 
-    window.onGoogleSignIn = async (resp)=>{
-      ID_TOKEN = resp.credential;
-      const payload = JSON.parse(atob(ID_TOKEN.split('.')[1]));
-      USER = {email:payload.email,name:payload.name,picture:payload.picture};
-      document.getElementById('login-card').classList.add('hidden');
-      document.getElementById('app-card').classList.remove('hidden');
-      document.getElementById('logout').classList.remove('hidden');
-      document.getElementById('user-info').textContent=`Bem-vindo, ${USER.name}`;
-      if(USER.email===ADMIN_EMAIL) document.getElementById('admin-btn').classList.remove('hidden');
-      renderDay();
-      fetchStatus();
-    };
+function $(id){return document.getElementById(id)}
 
-    function renderDay(){
-      const now=new Date();
-      const weekday=now.toLocaleDateString('pt-BR',{weekday:'long'});
-      const label=weekday.charAt(0).toUpperCase()+weekday.slice(1)+' - '+now.toLocaleDateString('pt-BR');
-      document.getElementById('day-label').textContent=label;
-    }
+function today(){
+  const now=new Date();
+  const d=now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
+  return {label:d, iso:now.toISOString().slice(0,10)};
+}
 
-    async function fetchStatus(){
-      const date=new Date().toISOString().slice(0,10);
-      const r=await api('POST',{action:'status',date});
-      if(r.checked){
-        document.getElementById('check-status').textContent='✅ Check-in já feito hoje';
-        document.getElementById('checkin-btn').disabled=true;
-      }else{
-        document.getElementById('check-status').textContent='Você ainda não fez check-in hoje.';
-        document.getElementById('checkin-btn').disabled=false;
-      }
-      loadHistory();
-    }
+async function api(body){
+  const headers={'Content-Type':'application/json'};
+  if(SESSION?.token) headers['Authorization']='Bearer '+SESSION.token;
+  const r=await fetch(SCRIPT_URL,{method:'POST',headers,body:JSON.stringify(body)});
+  const t=await r.text();try{return JSON.parse(t);}catch{return {raw:t}};
+}
 
-    async function api(method,body){
-      const opts={method,headers:{'Content-Type':'application/json','Authorization':'Bearer '+ID_TOKEN},body:JSON.stringify(body)};
-      const res=await fetch(SCRIPT_URL,opts);
-      const t=await res.text();
-      let j={};try{j=JSON.parse(t);}catch(e){j={raw:t}}return j;
-    }
+$('btn-login').onclick=async()=>{
+  const user=$('login-user').value.trim();
+  const pass=$('login-pass').value;
+  $('login-msg').textContent='Entrando...';
+  const r=await api({action:'login',user,pass});
+  if(r.error){$('login-msg').textContent='Erro: '+r.error;return;}
+  SESSION=r;
+  localStorage.setItem('sess',JSON.stringify(r));
+  $('login').classList.add('hidden');
+  $('app').classList.remove('hidden');
+  $('btn-logout').classList.remove('hidden');
+  if(r.isAdmin)$('btn-admin').classList.remove('hidden');
+  $('today').textContent=today().label;
+  loadStatus();
+};
 
-    document.getElementById('checkin-btn').onclick=async()=>{
-      const date=new Date().toISOString().slice(0,10);
-      await api('POST',{action:'checkin',date});
-      document.getElementById('check-status').textContent='✅ Check-in realizado!';
-      document.getElementById('checkin-btn').disabled=true;
-      loadHistory();
-    };
-
-    async function loadHistory(){
-      const r=await api('POST',{action:'history'});
-      const tbody=document.querySelector('#history-table tbody');
-      tbody.innerHTML='';
-      if(r.data){
-        r.data.forEach(row=>{
-          const tr=document.createElement('tr');
-          tr.innerHTML=`<td>${row.date}</td><td>${row.status}</td>`;
-          tbody.appendChild(tr);
-        });
-      }
-    }
-
-    document.getElementById('logout').onclick=()=>{
-      USER=null;ID_TOKEN=null;
-      document.getElementById('login-card').classList.remove('hidden');
-      document.getElementById('app-card').classList.add('hidden');
-      document.getElementById('logout').classList.add('hidden');
-      document.getElementById('admin-btn').classList.add('hidden');
-    };
-
-    // ===== ADMIN PANEL =====
-    document.getElementById('admin-btn').onclick=async()=>{
-      const panel=document.getElementById('admin-panel');
-      panel.classList.remove('hidden');
-      const r=await api('POST',{action:'admin_all'});
-      const tbody=document.querySelector('#admin-table tbody');
-      tbody.innerHTML='';
-      if(r.data){
-        r.data.forEach(row=>{
-          const tr=document.createElement('tr');
-          tr.innerHTML=`<td>${row.email}</td><td>${row.name}</td><td>${row.date}</td>`;
-          tbody.appendChild(tr);
-        });
-      }
-    };
-    document.getElementById('close-admin').onclick=()=>{
-      document.getElementById('admin-panel').classList.add('hidden');
-    };
-  </script>
-
-  <!-- ========================= GOOGLE APPS SCRIPT BACKEND =========================
-  Adicionado suporte ADMIN: visualizar todos os usuários.
-  ================================================================================
-  const SHEET_ID = 'COLOQUE_AQUI_O_ID_DA_PLANILHA';
-  const SHEET_NAME = 'checkins';
-  const ADMIN_EMAIL = 'SEU_EMAIL_ADMIN@EXEMPLO.COM';
-
-  function doPost(e){return handle_(e)}
-  function doGet(e){return handle_(e)}
-  function handle_(e){
-    try{
-      enableCors_();
-      const headers=e?.headers||{};
-      const auth=headers['Authorization']||headers['authorization']||'';
-      const token=auth.startsWith('Bearer ')?auth.substring(7):'';
-      if(!token)return json_({error:'No ID token'},401);
-      const user=verifyToken_(token);
-      if(!user.email)return json_({error:'Token inválido'},401);
-      const body=JSON.parse(e.postData.contents||'{}');
-      const act=body.action;
-      if(act==='status')return json_({checked:hasCheckin_(user.email,body.date)});
-      if(act==='checkin'){if(hasCheckin_(user.email,body.date))return json_({ok:true,already:true});appendCheckin_(user,body.date);return json_({ok:true});}
-      if(act==='history')return json_({data:getHistory_(user.email)});
-      if(act==='admin_all'){
-        if(user.email!==ADMIN_EMAIL)return json_({error:'Acesso negado'},403);
-        return json_({data:getAll_()});
-      }
-      return json_({error:'ação desconhecida'},400);
-    }catch(err){return json_({error:String(err)},500)}
+async function loadStatus(){
+  const r=await api({action:'status',date:today().iso});
+  if(r.checked){
+    $('check-status').textContent='✅ Check-in já feito hoje';
+    $('btn-checkin').disabled=true;
+  }else{
+    $('check-status').textContent='Você ainda não fez check-in hoje.';
+    $('btn-checkin').disabled=false;
   }
+  loadHistory();
+}
 
-  function verifyToken_(idToken){const res=UrlFetchApp.fetch('https://oauth2.googleapis.com/tokeninfo?id_token='+idToken,{muteHttpExceptions:true});if(res.getResponseCode()!=200)throw new Error('Token inválido');return JSON.parse(res.getContentText());}
-  function hasCheckin_(email,date){const sh=SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME)||SpreadsheetApp.openById(SHEET_ID).insertSheet(SHEET_NAME);const data=sh.getDataRange().getValues();for(let i=1;i<data.length;i++){if(data[i][0]==email&&data[i][1]==date)return true}return false;}
-  function appendCheckin_(user,date){const sh=SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME)||SpreadsheetApp.openById(SHEET_ID).insertSheet(SHEET_NAME);if(sh.getLastRow()==0)sh.appendRow(['email','date','checked_at','name']);sh.appendRow([user.email,date,new Date(),user.name||'']);}
-  function getHistory_(email){const sh=SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);const vals=sh.getDataRange().getValues();const hist=[];for(let i=1;i<vals.length;i++){if(vals[i][0]==email)hist.push({date:vals[i][1],status:'✔️'})}return hist;}
-  function getAll_(){const sh=SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);const vals=sh.getDataRange().getValues();const all=[];for(let i=1;i<vals.length;i++){all.push({email:vals[i][0],date:vals[i][1],name:vals[i][3]||''})}return all;}
-  function json_(o,c){const t=ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);if(c)t.setStatusCode(c);return t}
-  function enableCors_(){return HtmlService.createHtmlOutput('').addMetaTag('Access-Control-Allow-Origin','*').addMetaTag('Access-Control-Allow-Headers','Content-Type, Authorization').addMetaTag('Access-Control-Allow-Methods','GET, POST, OPTIONS')}
-  function doOptions(e){return ContentService.createTextOutput('').setMimeType(ContentService.MimeType.TEXT).setHeader('Access-Control-Allow-Origin','*').setHeader('Access-Control-Allow-Methods','GET, POST, OPTIONS').setHeader('Access-Control-Allow-Headers','Content-Type, Authorization')}
-  -->
+$('btn-checkin').onclick=async()=>{
+  const r=await api({action:'checkin',date:today().iso});
+  $('check-status').textContent='✅ Check-in registrado!';
+  $('btn-checkin').disabled=true;
+  loadHistory();
+};
+
+async function loadHistory(){
+  const r=await api({action:'history'});
+  const tb=$('#history-table tbody');tb.innerHTML='';
+  (r.data||[]).forEach(x=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${x.date}</td><td>${x.status}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+$('btn-logout').onclick=()=>{
+  SESSION=null;localStorage.removeItem('sess');
+  location.reload();
+};
+
+$('btn-admin').onclick=async()=>{
+  $('app').classList.add('hidden');
+  $('admin').classList.remove('hidden');
+  const r=await api({action:'admin_all'});
+  const tb=$('#admin-table tbody');tb.innerHTML='';
+  (r.data||[]).forEach(x=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${x.user}</td><td>${x.date}</td>`;
+    tb.appendChild(tr);
+  });
+};
+
+$('admin-close').onclick=()=>{$('admin').classList.add('hidden');$('app').classList.remove('hidden');};
+
+$('u-save').onclick=async()=>{
+  const user=$('u-user').value.trim();
+  const pass=$('u-pass').value.trim();
+  const isAdmin=$('u-admin').value==='true';
+  if(!user||!pass)return $('u-msg').textContent='Preencha os campos!';
+  await api({action:'user_upsert',user,pass,isAdmin});
+  $('u-msg').textContent='Usuário salvo!';
+};
+
+$('u-del').onclick=async()=>{
+  const user=$('u-user').value.trim();
+  if(!user)return $('u-msg').textContent='Informe o usuário!';
+  await api({action:'user_delete',user});
+  $('u-msg').textContent='Usuário excluído!';
+};
+
+// auto login
+(function(){
+  const s=localStorage.getItem('sess');
+  if(s){SESSION=JSON.parse(s);$('login').classList.add('hidden');$('app').classList.remove('hidden');$('btn-logout').classList.remove('hidden');if(SESSION.isAdmin)$('btn-admin').classList.remove('hidden');$('today').textContent=today().label;loadStatus();}
+})();
+</script>
+  
+const SHEET_ID = '11BJ3pzCnOzSMiAuKeFs_Ll9gASZ5DVGibgMLOYjMzGc';
+const SH_USERS = 'usuarios';
+const SH_CHECK = 'checkins';
+const SH_SESS = 'sessions';
+
+function doPost(e){return handle_(e);}
+function handle_(e){
+  try{
+    const b=JSON.parse(e.postData.contents||'{}');
+    const a=b.action;
+    if(a==='login')return login_(b);
+    const t=getAuth(e);const s=verSess(t);
+    if(!s)return j_({error:'sessão inválida'},401);
+    if(a==='status')return j_({checked:hasChk(s.user,b.date)});
+    if(a==='checkin'){if(hasChk(s.user,b.date))return j_({ok:true});addChk(s,b.date);return j_({ok:true});}
+    if(a==='history')return j_({data:getHist(s.user)});
+    if(a==='admin_all'){if(!s.isAdmin)return j_({error:'denied'},403);return j_({data:getAll()});}
+    if(a==='user_upsert'){if(!s.isAdmin)return j_({error:'denied'},403);usrUp(b);return j_({ok:true});}
+    if(a==='user_delete'){if(!s.isAdmin)return j_({error:'denied'},403);usrDel(b.user);return j_({ok:true});}
+  }catch(err){return j_({error:String(err)},500);}
+}
+
+function login_(b){const {user,pass}=b;const u=fndU(user);if(!u||u.password!==pass)return j_({error:'login incorreto'},401);const t=Utilities.getUuid();savSess(t,user,u.isAdmin);return j_({token:t,user,isAdmin:u.isAdmin});}
+function fndU(u){const sh=o(SH_USERS);boot(sh);const v=sh.getDataRange().getValues();for(let i=1;i<v.length;i++){if(v[i][0]===u)return{user:v[i][0],password:v[i][1],isAdmin:v[i][2]==true||String(v[i][2]).toLowerCase()==='true'};}return null;}
+function usrUp(b){const sh=o(SH_USERS);boot(sh);const v=sh.getDataRange().getValues();for(let i=1;i<v.length;i++){if(v[i][0]===b.user){sh.getRange(i+1,2).setValue(b.pass);sh.getRange(i+1,3).setValue(!!b.isAdmin);return;}}sh.appendRow([b.user,b.pass,!!b.isAdmin]);}
+function usrDel(u){const sh=o(SH_USERS);const v=sh.getDataRange().getValues();for(let i=1;i<v.length;i++){if(v[i][0]===u){sh.deleteRow(i+1);return;}}}
+function boot(sh){if(sh.getLastRow()==0){sh.appendRow(['user','password','isAdmin']);sh.appendRow(['admin','1234',true]);}}
+function savSess(t,u,a){const sh=o(SH_SESS);if(sh.getLastRow()==0)sh.appendRow(['token','user','exp','isAdmin']);sh.appendRow([t,u,new Date(Date.now()+6048e5),!!a]);}
+function verSess(t){if(!t)return null;const sh=o(SH_SESS);const v=sh.getDataRange().getValues();for(let i=1;i<v.length;i++){if(v[i][0]===t&&new Date(v[i][2])>new Date())return{user:v[i][1],isAdmin:v[i][3]==true||String(v[i][3]).toLowerCase()==='true'};}return null;}
+function hasChk(u,d){const sh=o(SH_CHECK);const v=sh.getDataRange().getValues();for(let i=1;i<v.length;i++){if(v[i][0]===u&&v[i][1]===d)return true;}return false;}
+function addChk(s,d){const sh=o(SH_CHECK);if(sh.getLastRow()==0)sh.appendRow(['user','date','at']);sh.appendRow([s.user,d,new Date()]);}
+function getHist(u){const sh=o(SH_CHECK);const v=sh.getDataRange().getValues();const r=[];for(let i=1;i<v.length;i++){if(v[i][0]===u)r.push({date:v[i][1],status:'✔️'});}return r;}
+function getAll(){const sh=o(SH_CHECK);const v=sh.getDataRange().getValues();const r=[];for(let i=1;i<v.length;i++){r.push({user:v[i][0],date:v[i][1]});}return r;}
+function getAuth(e){const h=e.headers||{};const a=h['Authorization']||h['authorization']||'';return a.startsWith('Bearer ')?a.substring(7):'';}
+function o(n){const ss=SpreadsheetApp.openById(SHEET_ID);return ss.getSheetByName(n)||ss.insertSheet(n);}
+function j_(o,c){const t=ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);if(c)t.setStatusCode(c);return t;}
+
 </body>
 </html>
