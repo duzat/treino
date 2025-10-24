@@ -1,217 +1,360 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Hub-login</title>
-  <style>
-    :root{--bg1:#0a0f22;--bg2:#0a0f18;--glass:rgba(255,255,255,.08);--muted:#a8b3d6;--text:#eef2ff;--acc1:#7c9cff;--acc2:#65f7c1;--ok:#7ef19a;--danger:#ff6b6b;--radius:16px;--shadow:0 10px 30px rgba(0,0,0,.35)}
-    body{margin:0;font-family:Poppins,system-ui;background:linear-gradient(135deg,var(--bg1),var(--bg2));color:var(--text);min-height:100vh;display:flex;flex-direction:column}
-    header{padding:12px 20px;background:rgba(255,255,255,.05);backdrop-filter:blur(10px);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #ffffff14}
-    .btn{border:0;padding:10px 14px;border-radius:12px;background:linear-gradient(135deg,#232f63,#27406f);color:#fff;cursor:pointer;font-weight:600}
-    .btn.primary{background:linear-gradient(135deg,#2a4cff,#00ffc3)}
-    .btn.danger{background:linear-gradient(135deg,#7a2c2c,#ff5252)}
-    .btn.warn{background:linear-gradient(135deg,#ffb700,#ff9100);color:#1a1500}
-    .card{background:rgba(255,255,255,.08);border-radius:var(--radius);padding:24px;max-width:420px;margin:auto;box-shadow:var(--shadow)}
-    .hidden{display:none}
-    input,select{width:100%;background:#0b1129;border:1px solid #ffffff1f;color:#fff;border-radius:10px;padding:10px;margin-top:6px}
-    table{width:100%;border-collapse:collapse;margin-top:10px}
-    th,td{padding:10px;border-bottom:1px solid rgba(255,255,255,.1)}
-    th{background:rgba(255,255,255,.1)}
-    main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>HUB</title>
+<style>
+:root {
+  --bg: #f5f6fa;
+  --text: #1c1c1e;
+  --muted: #6e6e73;
+  --accent: #007aff;
+  --success: #34c759;
+  --border: #e3e3e6;
+  --card-bg: #ffffff;
+  --shadow: 0 4px 20px rgba(0,0,0,0.08);
+  --radius: 16px;
+  --transition: all .35s cubic-bezier(.25,.1,.25,1);
+}
+body.dark {
+  --bg: #0c0c0f;
+  --text: #f5f5f7;
+  --muted: #a1a1a5;
+  --card-bg: #1c1c1e;
+  --border: #2c2c2e;
+  --shadow: 0 6px 25px rgba(0,0,0,0.4);
+  --accent: #0a84ff;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  transition: var(--transition);
+}
+.hidden { display: none !important; }
+
+/* LOGIN */
+#login {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: 20px;
+  text-align: center;
+}
+#login input {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  outline: none;
+  width: 220px;
+  background: var(--card-bg);
+  color: var(--text);
+}
+#login button {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 20px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: .3s;
+}
+#login button:hover { transform: scale(1.05); }
+
+/* HEADER */
+header {
+  width: 100%;
+  max-width: 1200px;
+  padding: 14px 20px;
+  border-radius: var(--radius);
+  background: var(--card-bg);
+  box-shadow: var(--shadow);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: var(--transition);
+}
+header .hello strong { color: var(--accent); }
+.clock { color: var(--muted); font-size: .9rem; }
+.theme-toggle {
+  border: none;
+  background: var(--card-bg);
+  color: var(--accent);
+  border-radius: 50%;
+  width: 36px; height: 36px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  box-shadow: var(--shadow);
+  transition: var(--transition);
+}
+.theme-toggle:hover { transform: scale(1.1); }
+
+/* TÍTULO */
+h1 {
+  text-align: center;
+  margin: 30px 0 20px;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* KANBAN */
+.kanban {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding: 10px;
+  width: 100%;
+  max-width: 1200px;
+  scroll-snap-type: x mandatory;
+}
+.column {
+  flex: 0 0 260px;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 14px;
+  box-shadow: var(--shadow);
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: var(--transition);
+}
+.column.today {
+  border-color: var(--accent);
+  background: linear-gradient(180deg, var(--card-bg), rgba(0,122,255,0.08));
+  animation: glow 3s infinite ease-in-out;
+}
+@keyframes glow {
+  0%,100% { box-shadow: 0 0 0 rgba(0,122,255,0.3); }
+  50% { box-shadow: 0 0 20px rgba(0,122,255,0.25); }
+}
+.column h3 {
+  font-size: 1rem;
+  color: var(--accent);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.column small { color: var(--muted); font-size: .8rem; }
+
+/* EXERCÍCIOS */
+.exercise {
+  background: rgba(0,0,0,0.03);
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: var(--transition);
+}
+.exercise:hover { background: rgba(0,0,0,0.05); }
+.exercise span { font-size: .85rem; color: var(--text); line-height: 1.3; }
+.check-btn {
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: .8rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.check-btn.done {
+  background: var(--success);
+  color: #fff;
+  border-color: var(--success);
+}
+
+/* SUMMARY / SAÚDE MENTAL */
+section.card {
+  width: 100%;
+  max-width: 1200px;
+  margin-top: 20px;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  padding: 18px;
+}
+.card h3 { color: var(--accent); margin-bottom: 10px; }
+.card p { color: var(--muted); font-size: .9rem; line-height: 1.4; }
+
+footer { color: var(--muted); font-size: .8rem; margin: 20px 0; text-align: center; }
+</style>
 </head>
 <body>
+
+<!-- LOGIN -->
+<div id="login">
+  <h1>MyTech Administrador</h1>
+  <p>Digite sua senha para acessar</p>
+  <input type="password" id="senha" placeholder="Senha de acesso" />
+  <button id="entrar">Entrar</button>
+  <small style="color:gray;">Acesso restrito</small>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="hidden">
 <header>
-  <h2>🏋️ Calistenia Tracker</h2>
-  <div>
-    <button id="btn-admin" class="btn warn hidden">Admin</button>
-    <button id="btn-logout" class="btn danger hidden">Sair</button>
+  <div class="hello">Olá, <strong>Dudu</strong></div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div class="clock" id="clock"></div>
+    <button class="theme-toggle" id="themeToggle">🌙</button>
   </div>
 </header>
 
-<main>
-  <!-- LOGIN -->
-  <section id="login" class="card">
-    <h3>Entrar</h3>
-    <input id="login-user" placeholder="Usuário" />
-    <input id="login-pass" type="password" placeholder="Senha" />
-    <button id="btn-login" class="btn primary" style="margin-top:10px">Entrar</button>
-    <p id="login-msg"></p>
-  </section>
+<h1>Hub de Saúde — Semana</h1>
+<div class="kanban" id="kanban"></div>
 
-  <!-- APP -->
-  <section id="app" class="hidden card">
-    <h3 id="today"></h3>
-    <p id="check-status">Carregando…</p>
-    <button id="btn-checkin" class="btn primary">Fazer Check-in</button>
-    <table id="history-table">
-      <thead><tr><th>Data</th><th>Status</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </section>
+<section class="card">
+  <h3>Resumo Diário (IA)</h3>
+  <p id="geminiSummary">Carregando...</p>
+</section>
 
-  <!-- ADMIN -->
-  <section id="admin" class="hidden card">
-    <h3>Painel Admin</h3>
-    <table id="admin-table">
-      <thead><tr><th>Usuário</th><th>Data</th></tr></thead>
-      <tbody></tbody>
-    </table>
-    <hr>
-    <h4>Gerenciar usuários</h4>
-    <input id="u-user" placeholder="Usuário" />
-    <input id="u-pass" placeholder="Senha" />
-    <select id="u-admin"><option value="false">Usuário</option><option value="true">Administrador</option></select>
-    <button id="u-save" class="btn primary" style="margin-top:8px">Salvar</button>
-    <button id="u-del" class="btn danger" style="margin-top:4px">Excluir</button>
-    <p id="u-msg"></p>
-    <button id="admin-close" class="btn" style="margin-top:8px">Fechar</button>
-  </section>
-</main>
+<section class="card">
+  <h3>Saúde Mental & Dicas (IA)</h3>
+  <p id="mentalTips">Carregando...</p>
+</section>
+
+<footer>HUB EDUTECH</footer>
+</div>
 
 <script>
-const SCRIPT_URL = 'COLE_AQUI_SUA_URL_DO_APPS_SCRIPT'; // ex: https://script.google.com/macros/s/AKfycbyEXEMPLO/exec
-let SESSION = null;
-
-function $(id){return document.getElementById(id)}
-
-function today(){
-  const now=new Date();
-  const d=now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
-  return {label:d, iso:now.toISOString().slice(0,10)};
-}
-
-async function api(body){
-  const headers={'Content-Type':'application/json'};
-  if(SESSION?.token) headers['Authorization']='Bearer '+SESSION.token;
-  const r=await fetch(SCRIPT_URL,{method:'POST',headers,body:JSON.stringify(body)});
-  const t=await r.text();try{return JSON.parse(t);}catch{return {raw:t}};
-}
-
-$('btn-login').onclick=async()=>{
-  const user=$('login-user').value.trim();
-  const pass=$('login-pass').value;
-  $('login-msg').textContent='Entrando...';
-  const r=await api({action:'login',user,pass});
-  if(r.error){$('login-msg').textContent='Erro: '+r.error;return;}
-  SESSION=r;
-  localStorage.setItem('sess',JSON.stringify(r));
-  $('login').classList.add('hidden');
-  $('app').classList.remove('hidden');
-  $('btn-logout').classList.remove('hidden');
-  if(r.isAdmin)$('btn-admin').classList.remove('hidden');
-  $('today').textContent=today().label;
-  loadStatus();
-};
-
-async function loadStatus(){
-  const r=await api({action:'status',date:today().iso});
-  if(r.checked){
-    $('check-status').textContent='✅ Check-in já feito hoje';
-    $('btn-checkin').disabled=true;
+/* ====== LOGIN ====== */
+const login=document.getElementById("login");
+const dashboard=document.getElementById("dashboard");
+const senhaInput=document.getElementById("senha");
+document.getElementById("entrar").onclick=()=>{
+  const senha=senhaInput.value.trim();
+  if(senha==="dudu123"){ // ✅ altere aqui sua senha
+    login.classList.add("hidden");
+    dashboard.classList.remove("hidden");
   }else{
-    $('check-status').textContent='Você ainda não fez check-in hoje.';
-    $('btn-checkin').disabled=false;
+    alert("Senha incorreta!");
   }
-  loadHistory();
-}
-
-$('btn-checkin').onclick=async()=>{
-  const r=await api({action:'checkin',date:today().iso});
-  $('check-status').textContent='✅ Check-in registrado!';
-  $('btn-checkin').disabled=true;
-  loadHistory();
 };
 
-async function loadHistory(){
-  const r=await api({action:'history'});
-  const tb=$('#history-table tbody');tb.innerHTML='';
-  (r.data||[]).forEach(x=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML=`<td>${x.date}</td><td>${x.status}</td>`;
-    tb.appendChild(tr);
+/* ====== CLOCK ====== */
+setInterval(()=>{document.getElementById("clock").textContent=
+  new Date().toLocaleString("pt-BR",{weekday:"long",hour:"2-digit",minute:"2-digit"});
+},1000);
+
+/* ====== ROTINA ====== */
+const storageKey="hub_saude_v3";
+const state=JSON.parse(localStorage.getItem(storageKey)||"{}");
+const rotina=[
+  {dia:"Segunda", foco:"Peito + Tríceps + Core", ex:[
+    {nome:"Flexão tradicional", reps:"4×12", tempo:"10 min"},
+    {nome:"Flexão diamante", reps:"3×10", tempo:"8 min"},
+    {nome:"Prancha", reps:"3×40s", tempo:"3 min"}
+  ]},
+  {dia:"Terça", foco:"Pernas + Core", ex:[
+    {nome:"Agachamento", reps:"4×20", tempo:"12 min"},
+    {nome:"Afundo", reps:"3×10", tempo:"8 min"},
+    {nome:"Abdominal", reps:"3×15", tempo:"6 min"}
+  ]},
+  {dia:"Quarta", foco:"Costas + Bíceps", ex:[
+    {nome:"Pull-up", reps:"4×10", tempo:"9 min"},
+    {nome:"Superman", reps:"3×15", tempo:"5 min"}
+  ]},
+  {dia:"Quinta", foco:"Repetição da Segunda", ex:[{nome:"Mesmo treino", reps:"—", tempo:"—"}]},
+  {dia:"Sexta", foco:"Repetição da Terça", ex:[{nome:"Mesmo treino", reps:"—", tempo:"—"}]},
+  {dia:"Sábado", foco:"Alongamentos", ex:[{nome:"Mobilidade geral", reps:"15 min", tempo:"15 min"}]},
+  {dia:"Domingo", foco:"Descanso ativo", ex:[{nome:"Caminhada leve", reps:"20–30 min", tempo:"30 min"}]}
+];
+const kanban=document.getElementById("kanban");
+const hoje=new Date().toLocaleDateString("pt-BR",{weekday:"long"});
+
+function buildKanban(){
+  kanban.innerHTML="";
+  rotina.forEach(day=>{
+    const isToday=hoje.toLowerCase().includes(day.dia.toLowerCase().slice(0,3));
+    const col=document.createElement("div");
+    col.className="column"+(isToday?" today":"");
+    col.innerHTML=`<h3>${day.dia}<small>${day.foco}</small></h3>`;
+    day.ex.forEach(ex=>{
+      const key=day.dia+"::"+ex.nome;
+      const done=!!state[key];
+      const div=document.createElement("div");
+      div.className="exercise";
+      div.innerHTML=`<span>${ex.nome}<br><small>${ex.reps} • ${ex.tempo}</small></span>
+                     <button class="check-btn${done?" done":""}" data-key="${key}">
+                     ${done?"Feito":"Fazer"}</button>`;
+      col.appendChild(div);
+    });
+    kanban.appendChild(col);
+  });
+  attachEvents();
+}
+function attachEvents(){
+  document.querySelectorAll(".check-btn").forEach(btn=>{
+    btn.onclick=()=>{
+      const key=btn.dataset.key;
+      if(state[key]) delete state[key]; else state[key]=true;
+      localStorage.setItem(storageKey,JSON.stringify(state));
+      buildKanban();
+    };
   });
 }
 
-$('btn-logout').onclick=()=>{
-  SESSION=null;localStorage.removeItem('sess');
-  location.reload();
-};
-
-$('btn-admin').onclick=async()=>{
-  $('app').classList.add('hidden');
-  $('admin').classList.remove('hidden');
-  const r=await api({action:'admin_all'});
-  const tb=$('#admin-table tbody');tb.innerHTML='';
-  (r.data||[]).forEach(x=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML=`<td>${x.user}</td><td>${x.date}</td>`;
-    tb.appendChild(tr);
-  });
-};
-
-$('admin-close').onclick=()=>{$('admin').classList.add('hidden');$('app').classList.remove('hidden');};
-
-$('u-save').onclick=async()=>{
-  const user=$('u-user').value.trim();
-  const pass=$('u-pass').value.trim();
-  const isAdmin=$('u-admin').value==='true';
-  if(!user||!pass)return $('u-msg').textContent='Preencha os campos!';
-  await api({action:'user_upsert',user,pass,isAdmin});
-  $('u-msg').textContent='Usuário salvo!';
-};
-
-$('u-del').onclick=async()=>{
-  const user=$('u-user').value.trim();
-  if(!user)return $('u-msg').textContent='Informe o usuário!';
-  await api({action:'user_delete',user});
-  $('u-msg').textContent='Usuário excluído!';
-};
-
-// auto login
-(function(){
-  const s=localStorage.getItem('sess');
-  if(s){SESSION=JSON.parse(s);$('login').classList.add('hidden');$('app').classList.remove('hidden');$('btn-logout').classList.remove('hidden');if(SESSION.isAdmin)$('btn-admin').classList.remove('hidden');$('today').textContent=today().label;loadStatus();}
-})();
-</script>
-  
-const SHEET_ID = '11BJ3pzCnOzSMiAuKeFs_Ll9gASZ5DVGibgMLOYjMzGc';
-const SH_USERS = 'usuarios';
-const SH_CHECK = 'checkins';
-const SH_SESS = 'sessions';
-
-function doPost(e){return handle_(e);}
-function handle_(e){
+/* ====== IA Gemini ====== */
+async function getGeminiSummary(){
+  const key="SUA_API_KEY_AQUI"; // coloque sua chave Gemini
   try{
-    const b=JSON.parse(e.postData.contents||'{}');
-    const a=b.action;
-    if(a==='login')return login_(b);
-    const t=getAuth(e);const s=verSess(t);
-    if(!s)return j_({error:'sessão inválida'},401);
-    if(a==='status')return j_({checked:hasChk(s.user,b.date)});
-    if(a==='checkin'){if(hasChk(s.user,b.date))return j_({ok:true});addChk(s,b.date);return j_({ok:true});}
-    if(a==='history')return j_({data:getHist(s.user)});
-    if(a==='admin_all'){if(!s.isAdmin)return j_({error:'denied'},403);return j_({data:getAll()});}
-    if(a==='user_upsert'){if(!s.isAdmin)return j_({error:'denied'},403);usrUp(b);return j_({ok:true});}
-    if(a==='user_delete'){if(!s.isAdmin)return j_({error:'denied'},403);usrDel(b.user);return j_({ok:true});}
-  }catch(err){return j_({error:String(err)},500);}
+    const resp=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key="+key,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        contents:[{parts:[{text:"Gere um resumo breve e motivador sobre o treino diário de calistenia de um homem de 19 anos, 60kg, 1.78m, incluindo energia, foco e disciplina."}]}]
+      })
+    });
+    const data=await resp.json();
+    document.getElementById("geminiSummary").textContent=data?.candidates?.[0]?.content?.parts?.[0]?.text||"Resumo não disponível.";
+  }catch{
+    document.getElementById("geminiSummary").textContent="Erro ao conectar à IA.";
+  }
+}
+async function getMentalTips(){
+  const key="SUA_API_KEY_AQUI"; // mesma chave
+  try{
+    const resp=await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key="+key,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        contents:[{parts:[{text:"Forneça uma dica curta e prática de saúde mental e bem-estar para manter motivação, foco e relaxamento durante uma rotina de treinos de calistenia."}]}]
+      })
+    });
+    const data=await resp.json();
+    document.getElementById("mentalTips").textContent=data?.candidates?.[0]?.content?.parts?.[0]?.text||"Dica não disponível.";
+  }catch{
+    document.getElementById("mentalTips").textContent="Erro ao conectar à IA.";
+  }
 }
 
-function login_(b){const {user,pass}=b;const u=fndU(user);if(!u||u.password!==pass)return j_({error:'login incorreto'},401);const t=Utilities.getUuid();savSess(t,user,u.isAdmin);return j_({token:t,user,isAdmin:u.isAdmin});}
-function fndU(u){const sh=o(SH_USERS);boot(sh);const v=sh.getDataRange().getValues();for(let i=1;i<v.length;i++){if(v[i][0]===u)return{user:v[i][0],password:v[i][1],isAdmin:v[i][2]==true||String(v[i][2]).toLowerCase()==='true'};}return null;}
-function usrUp(b){const sh=o(SH_USERS);boot(sh);const v=sh.getDataRange().getValues();for(let i=1;i<v.length;i++){if(v[i][0]===b.user){sh.getRange(i+1,2).setValue(b.pass);sh.getRange(i+1,3).setValue(!!b.isAdmin);return;}}sh.appendRow([b.user,b.pass,!!b.isAdmin]);}
-function usrDel(u){const sh=o(SH_USERS);const v=sh.getDataRange().getValues();for(let i=1;i<v.length;i++){if(v[i][0]===u){sh.deleteRow(i+1);return;}}}
-function boot(sh){if(sh.getLastRow()==0){sh.appendRow(['user','password','isAdmin']);sh.appendRow(['admin','1234',true]);}}
-function savSess(t,u,a){const sh=o(SH_SESS);if(sh.getLastRow()==0)sh.appendRow(['token','user','exp','isAdmin']);sh.appendRow([t,u,new Date(Date.now()+6048e5),!!a]);}
-function verSess(t){if(!t)return null;const sh=o(SH_SESS);const v=sh.getDataRange().getValues();for(let i=1;i<v.length;i++){if(v[i][0]===t&&new Date(v[i][2])>new Date())return{user:v[i][1],isAdmin:v[i][3]==true||String(v[i][3]).toLowerCase()==='true'};}return null;}
-function hasChk(u,d){const sh=o(SH_CHECK);const v=sh.getDataRange().getValues();for(let i=1;i<v.length;i++){if(v[i][0]===u&&v[i][1]===d)return true;}return false;}
-function addChk(s,d){const sh=o(SH_CHECK);if(sh.getLastRow()==0)sh.appendRow(['user','date','at']);sh.appendRow([s.user,d,new Date()]);}
-function getHist(u){const sh=o(SH_CHECK);const v=sh.getDataRange().getValues();const r=[];for(let i=1;i<v.length;i++){if(v[i][0]===u)r.push({date:v[i][1],status:'✔️'});}return r;}
-function getAll(){const sh=o(SH_CHECK);const v=sh.getDataRange().getValues();const r=[];for(let i=1;i<v.length;i++){r.push({user:v[i][0],date:v[i][1]});}return r;}
-function getAuth(e){const h=e.headers||{};const a=h['Authorization']||h['authorization']||'';return a.startsWith('Bearer ')?a.substring(7):'';}
-function o(n){const ss=SpreadsheetApp.openById(SHEET_ID);return ss.getSheetByName(n)||ss.insertSheet(n);}
-function j_(o,c){const t=ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);if(c)t.setStatusCode(c);return t;}
+/* ====== TEMA ====== */
+const themeToggle=document.getElementById("themeToggle");
+const prefersDark=window.matchMedia("(prefers-color-scheme: dark)").matches;
+if(prefersDark){document.body.classList.add("dark");themeToggle.textContent="☀️";}
+themeToggle.onclick=()=>{
+  document.body.classList.toggle("dark");
+  themeToggle.textContent=document.body.classList.contains("dark")?"☀️":"🌙";
+};
 
+/* INIT */
+buildKanban();
+getGeminiSummary();
+getMentalTips();
+</script>
 </body>
 </html>
