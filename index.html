@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calistenia Tracker — Google Auth + Sheets + Admin</title>
+  <style>
+    body{margin:0;font-family:Poppins,system-ui;background:linear-gradient(135deg,#0a0f22,#0a0f18);color:#fff;display:flex;flex-direction:column;min-height:100vh}
+    header{padding:10px 20px;background:rgba(255,255,255,.05);backdrop-filter:blur(10px);display:flex;justify-content:space-between;align-items:center}
+    main{flex:1;display:flex;justify-content:center;align-items:center;flex-direction:column;padding:20px}
+    .card{background:rgba(255,255,255,.08);border-radius:16px;padding:30px;max-width:700px;width:90%;box-shadow:0 10px 30px rgba(0,0,0,.4);text-align:center}
+    .btn{padding:10px 16px;border:none;border-radius:10px;cursor:pointer;font-weight:600;font-size:15px}
+    .btn-primary{background:linear-gradient(135deg,#2a4cff,#00ffc3);color:#fff}
+    .btn-danger{background:linear-gradient(135deg,#7a2c2c,#ff5252);color:#fff}
+    .btn-admin{background:linear-gradient(135deg,#ffb700,#ff9100);color:#000;font-weight:700}
+    table{width:100%;border-collapse:collapse;margin-top:20px}
+    th,td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.1);text-align:left}
+    th{background:rgba(255,255,255,.1)}
+    .hidden{display:none}
+  </style>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+  <header>
+    <h2>Calistenia Tracker</h2>
+    <div>
+      <button id="admin-btn" class="btn btn-admin hidden">Admin</button>
+      <button id="logout" class="btn btn-danger hidden">Sair</button>
+    </div>
+  </header>
+  <main>
+    <div id="login-card" class="card">
+      <h3>Login com Google</h3>
+      <p>Faça login para registrar seus check-ins diários sincronizados no Google Sheets.</p>
+      <div id="g_id_onload" data-client_id="REPLACE_GOOGLE_CLIENT_ID" data-callback="onGoogleSignIn" data-auto_prompt="false"></div>
+      <div class="g_id_signin" data-type="standard" data-shape="rectangular" data-theme="outline" data-text="signin_with" data-size="large"></div>
+    </div>
+
+    <div id="app-card" class="card hidden">
+      <h3 id="user-info">Bem-vindo!</h3>
+      <h4 id="day-label"></h4>
+      <p id="check-status">Carregando status...</p>
+      <button id="checkin-btn" class="btn btn-primary">Fazer Check-in</button>
+      <table id="history-table">
+        <thead><tr><th>Data</th><th>Status</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div id="admin-panel" class="card hidden">
+      <h3>Painel Administrativo</h3>
+      <p>Lista de todos os usuários e seus check-ins.</p>
+      <table id="admin-table">
+        <thead><tr><th>Email</th><th>Nome</th><th>Data</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <button id="close-admin" class="btn btn-danger">Fechar</button>
+    </div>
+  </main>
+
+  <script>
+    const CLIENT_ID = 'REPLACE_GOOGLE_CLIENT_ID';
+    const SCRIPT_URL = 'REPLACE_APPS_SCRIPT_WEBAPP_URL';
+    const ADMIN_EMAIL = 'SEU_EMAIL_ADMIN@EXEMPLO.COM'; // e-mail do administrador Google
+
+    let USER = null, ID_TOKEN = null;
+
+    window.onGoogleSignIn = async (resp)=>{
+      ID_TOKEN = resp.credential;
+      const payload = JSON.parse(atob(ID_TOKEN.split('.')[1]));
+      USER = {email:payload.email,name:payload.name,picture:payload.picture};
+      document.getElementById('login-card').classList.add('hidden');
+      document.getElementById('app-card').classList.remove('hidden');
+      document.getElementById('logout').classList.remove('hidden');
+      document.getElementById('user-info').textContent=`Bem-vindo, ${USER.name}`;
+      if(USER.email===ADMIN_EMAIL) document.getElementById('admin-btn').classList.remove('hidden');
+      renderDay();
+      fetchStatus();
+    };
+
+    function renderDay(){
+      const now=new Date();
+      const weekday=now.toLocaleDateString('pt-BR',{weekday:'long'});
+      const label=weekday.charAt(0).toUpperCase()+weekday.slice(1)+' - '+now.toLocaleDateString('pt-BR');
+      document.getElementById('day-label').textContent=label;
+    }
+
+    async function fetchStatus(){
+      const date=new Date().toISOString().slice(0,10);
+      const r=await api('POST',{action:'status',date});
+      if(r.checked){
+        document.getElementById('check-status').textContent='✅ Check-in já feito hoje';
+        document.getElementById('checkin-btn').disabled=true;
+      }else{
+        document.getElementById('check-status').textContent='Você ainda não fez check-in hoje.';
+        document.getElementById('checkin-btn').disabled=false;
+      }
+      loadHistory();
+    }
+
+    async function api(method,body){
+      const opts={method,headers:{'Content-Type':'application/json','Authorization':'Bearer '+ID_TOKEN},body:JSON.stringify(body)};
+      const res=await fetch(SCRIPT_URL,opts);
+      const t=await res.text();
+      let j={};try{j=JSON.parse(t);}catch(e){j={raw:t}}return j;
+    }
+
+    document.getElementById('checkin-btn').onclick=async()=>{
+      const date=new Date().toISOString().slice(0,10);
+      await api('POST',{action:'checkin',date});
+      document.getElementById('check-status').textContent='✅ Check-in realizado!';
+      document.getElementById('checkin-btn').disabled=true;
+      loadHistory();
+    };
+
+    async function loadHistory(){
+      const r=await api('POST',{action:'history'});
+      const tbody=document.querySelector('#history-table tbody');
+      tbody.innerHTML='';
+      if(r.data){
+        r.data.forEach(row=>{
+          const tr=document.createElement('tr');
+          tr.innerHTML=`<td>${row.date}</td><td>${row.status}</td>`;
+          tbody.appendChild(tr);
+        });
+      }
+    }
+
+    document.getElementById('logout').onclick=()=>{
+      USER=null;ID_TOKEN=null;
+      document.getElementById('login-card').classList.remove('hidden');
+      document.getElementById('app-card').classList.add('hidden');
+      document.getElementById('logout').classList.add('hidden');
+      document.getElementById('admin-btn').classList.add('hidden');
+    };
+
+    // ===== ADMIN PANEL =====
+    document.getElementById('admin-btn').onclick=async()=>{
+      const panel=document.getElementById('admin-panel');
+      panel.classList.remove('hidden');
+      const r=await api('POST',{action:'admin_all'});
+      const tbody=document.querySelector('#admin-table tbody');
+      tbody.innerHTML='';
+      if(r.data){
+        r.data.forEach(row=>{
+          const tr=document.createElement('tr');
+          tr.innerHTML=`<td>${row.email}</td><td>${row.name}</td><td>${row.date}</td>`;
+          tbody.appendChild(tr);
+        });
+      }
+    };
+    document.getElementById('close-admin').onclick=()=>{
+      document.getElementById('admin-panel').classList.add('hidden');
+    };
+  </script>
+
+  <!-- ========================= GOOGLE APPS SCRIPT BACKEND =========================
+  Adicionado suporte ADMIN: visualizar todos os usuários.
+  ================================================================================
+  const SHEET_ID = 'COLOQUE_AQUI_O_ID_DA_PLANILHA';
+  const SHEET_NAME = 'checkins';
+  const ADMIN_EMAIL = 'SEU_EMAIL_ADMIN@EXEMPLO.COM';
+
+  function doPost(e){return handle_(e)}
+  function doGet(e){return handle_(e)}
+  function handle_(e){
+    try{
+      enableCors_();
+      const headers=e?.headers||{};
+      const auth=headers['Authorization']||headers['authorization']||'';
+      const token=auth.startsWith('Bearer ')?auth.substring(7):'';
+      if(!token)return json_({error:'No ID token'},401);
+      const user=verifyToken_(token);
+      if(!user.email)return json_({error:'Token inválido'},401);
+      const body=JSON.parse(e.postData.contents||'{}');
+      const act=body.action;
+      if(act==='status')return json_({checked:hasCheckin_(user.email,body.date)});
+      if(act==='checkin'){if(hasCheckin_(user.email,body.date))return json_({ok:true,already:true});appendCheckin_(user,body.date);return json_({ok:true});}
+      if(act==='history')return json_({data:getHistory_(user.email)});
+      if(act==='admin_all'){
+        if(user.email!==ADMIN_EMAIL)return json_({error:'Acesso negado'},403);
+        return json_({data:getAll_()});
+      }
+      return json_({error:'ação desconhecida'},400);
+    }catch(err){return json_({error:String(err)},500)}
+  }
+
+  function verifyToken_(idToken){const res=UrlFetchApp.fetch('https://oauth2.googleapis.com/tokeninfo?id_token='+idToken,{muteHttpExceptions:true});if(res.getResponseCode()!=200)throw new Error('Token inválido');return JSON.parse(res.getContentText());}
+  function hasCheckin_(email,date){const sh=SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME)||SpreadsheetApp.openById(SHEET_ID).insertSheet(SHEET_NAME);const data=sh.getDataRange().getValues();for(let i=1;i<data.length;i++){if(data[i][0]==email&&data[i][1]==date)return true}return false;}
+  function appendCheckin_(user,date){const sh=SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME)||SpreadsheetApp.openById(SHEET_ID).insertSheet(SHEET_NAME);if(sh.getLastRow()==0)sh.appendRow(['email','date','checked_at','name']);sh.appendRow([user.email,date,new Date(),user.name||'']);}
+  function getHistory_(email){const sh=SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);const vals=sh.getDataRange().getValues();const hist=[];for(let i=1;i<vals.length;i++){if(vals[i][0]==email)hist.push({date:vals[i][1],status:'✔️'})}return hist;}
+  function getAll_(){const sh=SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);const vals=sh.getDataRange().getValues();const all=[];for(let i=1;i<vals.length;i++){all.push({email:vals[i][0],date:vals[i][1],name:vals[i][3]||''})}return all;}
+  function json_(o,c){const t=ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);if(c)t.setStatusCode(c);return t}
+  function enableCors_(){return HtmlService.createHtmlOutput('').addMetaTag('Access-Control-Allow-Origin','*').addMetaTag('Access-Control-Allow-Headers','Content-Type, Authorization').addMetaTag('Access-Control-Allow-Methods','GET, POST, OPTIONS')}
+  function doOptions(e){return ContentService.createTextOutput('').setMimeType(ContentService.MimeType.TEXT).setHeader('Access-Control-Allow-Origin','*').setHeader('Access-Control-Allow-Methods','GET, POST, OPTIONS').setHeader('Access-Control-Allow-Headers','Content-Type, Authorization')}
+  -->
+</body>
+</html>
